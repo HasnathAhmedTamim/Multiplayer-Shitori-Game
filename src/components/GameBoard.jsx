@@ -7,9 +7,10 @@ import WordHistory from './WordHistory';
 import CountdownTimer from './CountdownTimer';
 
 const initialPlayers = [
-  { name: 'Player 1', score: 0 },
-  { name: 'Player 2', score: 0 }
+  { name: 'Player 1', score: 20 },
+  { name: 'Player 2', score: 20 }
 ];
+
 
 const GameBoard = () => {
   // State: track current player (0 or 1)
@@ -20,9 +21,17 @@ const GameBoard = () => {
   const [players, setPlayers] = useState(initialPlayers);
   // State: track last word entered
   const [lastWord, setLastWord] = useState('');
-
   // State: error message for invalid word
   const [error, setError] = useState('');
+  // State: winner
+  const [winner, setWinner] = useState(null);
+  // State: time left for speed bonus
+  const [timeLeft, setTimeLeft] = useState(10);
+  // State: game started
+  const [gameStarted, setGameStarted] = useState(false);
+
+  // Pass timeLeft to CountdownTimer and update on tick
+  const handleTimerTick = (t) => setTimeLeft(t);
 
   // Helper: Validate word structure
   const isValidStructure = (word) => {
@@ -49,6 +58,7 @@ const GameBoard = () => {
 
   // Function to handle word submission (to be called from PlayerInput)
   const handleWordSubmit = async (word) => {
+    if (!gameStarted || winner) return;
     setError('');
     // Validate structure
     if (!isValidStructure(word)) {
@@ -76,41 +86,85 @@ const GameBoard = () => {
     // If valid, update word history, last word, and switch turn
     setWordHistory([...wordHistory, word.toLowerCase()]);
     setLastWord(word);
+    // Calculate length bonus and speed bonus
+    const lengthBonus = word.length - 4;
+    const speedBonus = timeLeft;
+    const totalBonus = Math.max(lengthBonus, 0) + Math.max(speedBonus, 0);
+    // Subtract bonus from current player's score, clamp to zero
+    const updatedPlayers = players.map((p, idx) => {
+      if (idx === currentPlayer) {
+        const newScore = p.score - totalBonus;
+        return { ...p, score: newScore < 0 ? 0 : newScore };
+      }
+      return p;
+    });
+    setPlayers(updatedPlayers);
+    // Check for winner
+    if (updatedPlayers[currentPlayer].score <= 0) {
+      setWinner(players[currentPlayer].name);
+      setGameStarted(false);
+    }
     setCurrentPlayer((currentPlayer + 1) % 2);
+    setTimeLeft(10); // Reset timer for next turn
   };
 
   // Function to handle timer timeout (player loses point and turn)
   const handleTimeout = () => {
+    if (!gameStarted || winner) return;
     // Deduct point from current player
-    const updatedPlayers = players.map((p, idx) =>
-      idx === currentPlayer ? { ...p, score: p.score - 1 } : p
-    );
+    const updatedPlayers = players.map((p, idx) => {
+      if (idx === currentPlayer) {
+        const newScore = p.score - 1;
+        return { ...p, score: newScore < 0 ? 0 : newScore };
+      }
+      return p;
+    });
     setPlayers(updatedPlayers);
+    // Check for winner
+    if (updatedPlayers[currentPlayer].score <= 0) {
+      setWinner(players[currentPlayer].name);
+      setGameStarted(false);
+    }
     // Switch turn
     setCurrentPlayer((currentPlayer + 1) % 2);
+    setTimeLeft(10); // Reset timer for next turn
   };
 
   return (
-    <div className="game-board">
+    <div className="bg-white rounded p-4 mb-4 border">
+      {/* Start button, only enabled if game not started */}
+      {!gameStarted && !winner && (
+        <button className="mb-4 px-4 py-2 bg-blue-500 text-white rounded" onClick={() => {
+          setPlayers(initialPlayers);
+          setCurrentPlayer(0);
+          setWordHistory([]);
+          setLastWord('');
+          setError('');
+          setWinner(null);
+          setTimeLeft(10);
+          setGameStarted(true);
+        }}>
+          Start
+        </button>
+      )}
+      {/* Display winner if game is over */}
+      {winner && (
+        <div className="text-center text-green-600 font-bold text-xl mb-4">
+          Winner: {winner}!
+        </div>
+      )}
       {/* Display current player's turn with highlight */}
-      <h2>
-        Turn: <span style={{
-          background: currentPlayer === 0 ? '#4f46e5' : '#e11d48',
-          color: '#fff',
-          padding: '0.3em 1em',
-          borderRadius: '1em',
-          fontWeight: 'bold',
-          fontSize: '1.1em'
-        }}>{players[currentPlayer].name}</span>
+      <h2 className="text-lg font-bold mb-4 text-center">
+        Turn: <span className={`px-3 py-1 rounded text-white font-bold ${currentPlayer === 0 ? 'bg-blue-500' : 'bg-pink-500'}`}>{players[currentPlayer].name}</span>
       </h2>
       {/* Show error message if any */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {/* CountdownTimer: Timer for current player's turn */}
-      <CountdownTimer duration={10} onTimeout={handleTimeout} resetKey={currentPlayer + '-' + wordHistory.length} />
+      {error && <p className="text-red-600 font-medium mb-2 text-center">{error}</p>}
+      {/* CountdownTimer: Timer for current player's turn, only running if gameStarted and no winner */}
+      <CountdownTimer duration={10} onTimeout={handleTimeout} resetKey={currentPlayer + '-' + wordHistory.length} onTick={handleTimerTick} running={gameStarted && !winner} />
       {/* ScoreBoard: Shows scores for both players */}
       <ScoreBoard players={players} />
-      {/* PlayerInput: Handles word input and submission */}
-      <PlayerInput onSubmit={handleWordSubmit} lastWord={lastWord} />
+      {/* PlayerInput: Handles word input and submission, only enabled if gameStarted and no winner */}
+      <PlayerInput onSubmit={handleWordSubmit} lastWord={lastWord} disabled={!gameStarted || !!winner} />
       {/* WordHistory: Shows all previously entered words */}
       <WordHistory words={wordHistory} />
     </div>

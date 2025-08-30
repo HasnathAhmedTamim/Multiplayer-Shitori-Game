@@ -22,18 +22,19 @@ const PlayerInput = ({ onSubmit, lastWord }) => {
   };
 
   return (
-    <div className="player-input">
+    <div className="mb-4">
       {/* Show last word for reference */}
-      <p>Last word: <strong>{lastWord || 'None'}</strong></p>
+      <p className="mb-2 text-gray-700">Last word: <span className="font-semibold text-blue-600">{lastWord || 'None'}</span></p>
       {/* Input field and submit button */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
           value={input}
           onChange={handleChange}
           placeholder="Enter your word"
+          className="px-3 py-1 border rounded text-base"
         />
-        <button type="submit">Submit</button>
+        <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded">Submit</button>
       </form>
     </div>
   );

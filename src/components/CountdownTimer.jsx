@@ -25,9 +25,9 @@ const CountdownTimer = ({ duration = 10, onTimeout, resetKey }) => {
   }, [timeLeft, onTimeout]);
 
   return (
-    <div className="countdown-timer">
+    <div className="mb-2">
       {/* Display countdown timer */}
-      <p>Time left: <strong>{timeLeft}</strong> seconds</p>
+      <p className="text-base font-bold text-gray-700">Time left: <span className="text-gray-900">{timeLeft}</span> seconds</p>
     </div>
   );
 };
