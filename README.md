@@ -36,11 +36,3 @@ You can deploy this app easily to Netlify or Vercel:
 
 ## Dictionary API
 - Uses [dictionaryapi.dev](https://dictionaryapi.dev/) for word validation.
-
-## Assessment Notes
-- Please record your screen and camera as per instructions.
-- Submit your GitHub repo and video links via the submission form.
-
----
-
-**Good luck!**
